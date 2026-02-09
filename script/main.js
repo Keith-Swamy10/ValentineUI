@@ -6,7 +6,7 @@ const animationTimeline = () => {
   // Utility: split text into spans safely
   const splitTextIntoSpans = (element) => {
     if (!element) return;
-  
+
     const text = element.textContent;
     element.innerHTML = text
       .split("")
@@ -16,7 +16,7 @@ const animationTimeline = () => {
       })
       .join("");
   };
-  
+
 
   const textBox = document.getElementsByClassName("hbd-chatbox")[0];
   const wishHeading = document.getElementsByClassName("wish-hbd")[0];
@@ -146,41 +146,27 @@ const animationTimeline = () => {
       0.2
     )
 
-    // Image reveal
-    .from(".girl-dp", 0.6, {
-      scale: 3.2,
+    // Image reveal (Classy Polaroid Drop)
+    .from(".girl-dp", 1, {
       opacity: 0,
-      x: 20,
-      y: -20,
-      rotationZ: -40,
+      y: 40,
+      scale: 0.95,
+      rotation: 5,
+      ease: Power2.easeOut,
     }, "-=2")
 
-    // Wish text
+    // Wish text (Elegant Reveal)
     .staggerFrom(".wish-hbd span", 0.7, {
       opacity: 0,
-      y: -40,
-      rotation: 120,
-      skewX: "30deg",
-      ease: Elastic.easeOut.config(1, 0.5),
-    }, 0.1)
+      y: 20,
+      ease: Power2.easeOut,
+    }, 0.05)
 
-    .staggerFromTo(".wish-hbd span", 0.7,
-      { scale: 1.3, rotationY: 120 },
-      {
-        scale: 1,
-        rotationY: 0,
-        color: "#ff69b4",
-        ease: Expo.easeOut,
-      },
-      0.1,
-      "celebrate"
-    )
-
-    .from(".wish h5", 0.5, {
+    .from(".wish h5", 0.7, {
       opacity: 0,
-      y: 10,
-      skewX: "-15deg",
-    }, "celebrate")
+      y: 20,
+      ease: Power2.easeOut,
+    }, "-=0.2")
 
     // SVG burst
     .staggerTo(".eight svg", 1.5, {
@@ -191,7 +177,7 @@ const animationTimeline = () => {
       repeatDelay: 1.4,
     }, 0.3)
 
-    
+
 
     .to(".nine", 0.1, { opacity: 1, pointerEvents: "auto" })
     .staggerFrom(".nine p", 1, ideaEnter, 1.2)
@@ -199,7 +185,7 @@ const animationTimeline = () => {
       opacity: 1,
       pointerEvents: "auto"
     })
-    .call(initValentineInteraction);    
+    .call(initValentineInteraction);
 
   // Replay
   const replayBtn = document.getElementById("replay");
@@ -245,20 +231,38 @@ const initValentineInteraction = () => {
 
   if (!yesBtn || !noBtn) return;
 
-  let escaped = false;
-
+  // --- "Yes" Button Logic ---
   yesBtn.addEventListener("click", () => {
     responseText.textContent = "Yay! You just made my day 💖";
-  
-    // Disable buttons immediately
+
+    // Confetti Explosion
+    if (typeof confetti === "function") {
+      const duration = 15 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999999 };
+
+      const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+      const interval = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+      }, 250);
+    }
+
+    // Disable buttons
     yesBtn.style.pointerEvents = "none";
     noBtn.style.pointerEvents = "none";
-  
-    // Hard-hide NO button (it may be in <body>)
     noBtn.style.display = "none";
-  
-    // ⏳ Let the message stay for a moment
-    TweenMax.delayedCall(1.2, () => {
+
+    // Transition out
+    TweenMax.delayedCall(3, () => {
       TweenMax.to(".valentine-box", 0.6, {
         opacity: 0,
         scale: 0.92,
@@ -266,86 +270,68 @@ const initValentineInteraction = () => {
         onComplete: () => {
           const box = document.querySelector(".valentine-box");
           if (box) box.style.display = "none";
-  
-          // ▶ Resume animation AFTER UI is gone
           window.tl.play("waitForYes");
         }
       });
     });
   });
-  
-  
 
-  noBtn.addEventListener("mouseenter", () => {
-    // Preserve visual style
-    let dodgeCooldown = false;
+  // --- "No" Button Logic (Run Away + Pleading) ---
+  const messages = [
+    "Really?", "Think again!", "Pookie please?", "Are you sure?",
+    "Last chance!", "Don't break my heart ;(", "Pretty please?"
+  ];
+  let messageIndex = 0;
 
-const moveNoButton = () => {
-  if (dodgeCooldown) return;
-  dodgeCooldown = true;
+  const moveNoButton = () => {
+    // 1. Reparent to body if needed (to escape the container's transform)
+    if (noBtn.parentNode !== document.body) {
+      const rect = noBtn.getBoundingClientRect();
 
-  const padding = 120;
-  const x = Math.random() * (window.innerWidth - noBtn.offsetWidth - padding);
-  const y = Math.random() * (window.innerHeight - noBtn.offsetHeight - padding);
+      // Temporarily set style to match current visual position
+      noBtn.style.position = "absolute";
+      noBtn.style.left = rect.left + "px";
+      noBtn.style.top = rect.top + "px";
 
-  noBtn.style.left = `${Math.max(padding, x)}px`;
-  noBtn.style.top = `${Math.max(padding, y)}px`;
+      document.body.appendChild(noBtn);
+    }
 
-  // short cooldown prevents jitter
-  setTimeout(() => {
-    dodgeCooldown = false;
-  }, 80);
-};
+    // 2. Change text
+    noBtn.textContent = messages[messageIndex];
+    messageIndex = (messageIndex + 1) % messages.length;
 
-// Preserve style & move to body once
-const escapeNoButton = () => {
-  const computed = window.getComputedStyle(noBtn);
+    // 3. Move Logic (Relative Jumps)
+    const currentLeft = parseFloat(noBtn.style.left) || noBtn.getBoundingClientRect().left;
+    const currentTop = parseFloat(noBtn.style.top) || noBtn.getBoundingClientRect().top;
 
-  noBtn.style.cssText += `
-    font-family: ${computed.fontFamily};
-    font-size: ${computed.fontSize};
-    padding: ${computed.padding};
-    border-radius: ${computed.borderRadius};
-    background: ${computed.background};
-    color: ${computed.color};
-    box-shadow: ${computed.boxShadow};
-    border: ${computed.border};
-  `;
+    // Move distance: between 50px and 200px
+    const distance = 150;
 
-  if (!noBtn.dataset.escaped) {
-    const rect = noBtn.getBoundingClientRect();
-    document.body.appendChild(noBtn);
+    // Random direction
+    const angle = Math.random() * Math.PI * 2;
 
-    noBtn.style.position = "fixed";
-    noBtn.style.left = `${rect.left}px`;
-    noBtn.style.top = `${rect.top}px`;
-    noBtn.style.zIndex = "99999";
-    noBtn.dataset.escaped = "true";
-  }
-};
+    let newX = currentLeft + Math.cos(angle) * distance;
+    let newY = currentTop + Math.sin(angle) * distance;
 
-// Start dodging when cursor comes near
-document.addEventListener("mousemove", (e) => {
-  if (!noBtn || noBtn.style.display === "none") return;
+    // 4. Boundary Checks (Padding of 20px)
+    const padding = 20;
+    const maxX = window.innerWidth - noBtn.offsetWidth - padding;
+    const maxY = window.innerHeight - noBtn.offsetHeight - padding;
 
-  escapeNoButton();
+    // Clamp values
+    newX = Math.min(Math.max(padding, newX), maxX);
+    newY = Math.min(Math.max(padding, newY), maxY);
 
-  const rect = noBtn.getBoundingClientRect();
-  const buffer = 10;
+    // Apply new position
+    noBtn.style.position = "absolute"; // Ensure it stays absolute/fixed
+    noBtn.style.left = `${newX}px`;
+    noBtn.style.top = `${newY}px`;
+    noBtn.style.zIndex = "999999";
+  };
 
-  const near =
-    e.clientX > rect.left - buffer &&
-    e.clientX < rect.right + buffer &&
-    e.clientY > rect.top - buffer &&
-    e.clientY < rect.bottom + buffer;
-
-  if (near) {
-    moveNoButton();
-  }
-});
-
-  });
-  
+  // Events to trigger movement
+  noBtn.addEventListener("mouseover", moveNoButton);
+  noBtn.addEventListener("click", moveNoButton);
 };
 
 
