@@ -205,74 +205,32 @@ const animationTimeline = () => {
 // ===============================
 // Data Injection
 // ===============================
-// ===============================
-// Data Injection
-// ===============================
 const fetchData = async () => {
+  // 1. Fetch Default Data (customize.json)
+  let finalData = {
+    name: "My Love",
+    greetingText: "I have something to tell you...",
+    wishText: "Happy Valentine's Day!",
+    imagePath: "img/girl_pic.jpeg" // Fallback if json fails
+  };
+
+  try {
+    const localRes = await fetch("customize.json");
+    if (localRes.ok) {
+      const localData = await localRes.json();
+      finalData = { ...finalData, ...localData };
+    }
+  } catch (err) {
+    console.warn("Could not load customize.json:", err);
+  }
+
+  // 2. Fetch API Data (if credentials exist)
   const urlParams = new URLSearchParams(window.location.search);
   const valentineCode = urlParams.get("valentineCode");
   const valentinePassword = localStorage.getItem("valentinePassword");
 
-  console.log("FetchData config:", { valentineCode, hasPassword: !!valentinePassword });
-
-  // DEBUG ALERT - Remove after fixing
-  // alert(`Debug: Code=${valentineCode}, Pass=${!!valentinePassword}`);
-
-  if (!valentineCode || !valentinePassword) {
-    console.warn("No valentineCode or password found. Skipping API fetch.");
-    return;
-  }
-
-  try {
-    const res = await fetch("https://api.cohrenzai.com/ValidateValentineNumber", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ valentineCode, valentinePassword }),
-    });
-
-    if (!res.ok) throw new Error("API response not ok: " + res.status);
-
-    const data = await res.json();
-    console.log("API Response Data:", data);
-
-    // Handle direct or nested data structure
-    const content = data.data || data.user || data;
-    console.log("Resolved Content Object:", content);
-
-    // Map API fields to DOM
-    // sender -> #name
-    if (content.receiver) {
-      const nameEl = document.getElementById("name");
-      console.log("Updating Name Element:", nameEl, "with", content.receiver);
-      if (nameEl) nameEl.innerText = content.receiver;
-    } else {
-      console.warn("No receiver field in content");
-    }
-
-    // paragraph -> #wishText
-    if (content.paragraph) {
-      const wishEl = document.getElementById("wishText");
-      console.log("Updating Wish Element:", wishEl, "with", content.paragraph);
-      if (wishEl) wishEl.innerText = content.paragraph;
-    } else {
-      console.warn("No paragraph field in content (or null)");
-    }
-
-    // image_url -> #imagePath (src)
-    if (content.image_url) {
-      const imgEl = document.getElementById("imagePath");
-      console.log("Updating Image Element:", imgEl, "with", content.image_url);
-      if (imgEl) imgEl.setAttribute("src", content.image_url);
-    } else {
-      console.warn("No image_url field in content");
-    }
-
-  } catch (err) {
-    console.error("Error fetching data from API:", err);
-    // alert("Error fetching data: " + err.message);
-  }
+  // alert("Error fetching data: " + err.message);
+}
 };
 
 // ===============================

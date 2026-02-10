@@ -244,12 +244,13 @@
         if (isPlaying) {
           bgMusic.pause();
           isPlaying = false;
+          updateMusicIcon();
         } else {
           bgMusic.play().then(() => {
             isPlaying = true;
+            updateMusicIcon();
           }).catch(e => console.log("Audio play failed:", e));
         }
-        updateMusicIcon();
       }
 
       musicControl.addEventListener("click", (e) => {
